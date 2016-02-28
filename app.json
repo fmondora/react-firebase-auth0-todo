@@ -1,8 +1,8 @@
 {
   "name": "React Firebase Auth0 integration",
-  "description": "This is a makkina project for react-firebase-auth0 integration",
+  "description": "This is a fmondora project for react-firebase-auth0 integration",
   "keywords": [ "react", "reactjs", "firebase", "auth0" ],
-  "repository": "https://github.com/makkina/react-firebase-auth0",
+  "repository": "https://github.com/fmondora/react-firebase-auth0",
   "logo": "https://www.google.it/url?sa=i&rct=j&q=&esrc=s&source=images&cd=&ved=0ahUKEwiS-Y373JjLAhXMXRQKHVhWAQkQjRwIBw&url=https%3A%2F%2Ftwitter.com%2Ffirebase&bvm=bv.115339255,d.bGQ&psig=AFQjCNE1jVOzJMJwtXYh-gzkjK8ZDsXP_g&ust=1456689377108430g",
   "website": "",
   "success_url": "/",

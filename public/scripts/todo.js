@@ -1,113 +1,148 @@
+var LoggedIn = React.createClass({
+  getInitialState: function() {
+    return {
+      profile: null
+    }
+  },
 
-var TodoForm = React.createClass( {
-    getInitialState: function() {
-     return {due: '', description: ''};
-    },
-    handleDueDate: function( e ) {
-      console.log("should handle due date change");
-      this.setState({due: e.target.value});
-
-    },
-    handleTodo: function( e ){
-      console.log("should handle todo change");
-      this.setState({description: e.target.value});
-
-    },
-    handleSubmit: function( e ) {
-      console.log("should handle the submit");
-      e.preventDefault();
-      var due = this.state.due.trim();
-      var description = this.state.description.trim();
-      if (!due || !description) {
+  componentDidMount: function() {
+    // In this case, the lock and token are retrieved from the parent component
+    // If these are available locally, use `this.lock` and `this.idToken`
+    this.props.lock.getProfile(this.props.idToken, function (err, profile) {
+      if (err) {
+        console.log("Error loading the Profile", err);
         return;
       }
-      this.props.onTodoSubmit({due: due, description: description});
-      this.setState({due: '', description: ''});
-
-    },
-    render: function() {
-      return (
-        <form className="todoForm" onSubmit={this.handleSubmit}>
-          <input type="text"
-            placeholder="Due Date"
-            onChange={this.handleDueDate}
-            />
-          <input type="text"
-            placeholder="Todo..."
-            onChange={this.handleTodo}/>
-          <input type="submit" value="Save" />
-        </form>
-      );
-    }
-
-});
-
-
-var Todo = React.createClass( {
-
-    render: function(){
-      var key=this.props.key;
-      var description = this.props.description;
-      var due=this.props.due;
-      return (
-          <p className="todo"> {key}: {due} --> {description} </p>
-      );
-    }
- });
-
-
-var TodoList = React.createClass( {
-  render: function() {
-    var todos = this.props.todos.map( function(todo){
-        return (
-          <Todo key={todo.id} description={todo.description} due={todo.due} />
-        );
-    });
-    return (
-      <div className="TodoList">
-        {todos}
-      </div>
-    );
-  }
-
-});
-
-var TodoBox = React.createClass( {
-  getInitialState: function() {
-    this.todos=[];
-    return {todos: []};
-  },
-  componentWillMount: function() {
-    console.log("booting todobox");
-    this.firebaseRef = new Firebase("https://todo-react-auth0.firebaseio.com/todos");
-    this.firebaseRef.on("child_added", function(dataSnapshot) {
-      this.todos.push(dataSnapshot.val());
-      this.setState({
-        todos: this.todos
-      });
-      console.log("state changed");
+      this.setState({profile: profile});
     }.bind(this));
-    console.log("booted");
   },
-  handleTodoSubmit: function( tododata ) {
-    console.log("from the box to manage the todo submit");
-    this.firebaseRef.push( tododata );
-  },
-  componentWillUnmount: function() {
-    this.firebaseRef.off();
-  },
+
   render: function() {
-    return (
-      <div className="TodoBox">
-
-        <TodoList todos={this.state.todos}/>
-        <TodoForm onTodoSubmit={this.handleTodoSubmit}/>
-
-      </div>
-    );
+    if (this.state.profile) {
+      return (
+        <h2>Welcome {this.state.profile.nickname}</h2>
+      );
+    } else {
+      return (
+        <div className="loading">Loading profile</div>
+      );
+    }
   }
 });
 
-ReactDOM.render(
-  <TodoBox/>, document.getElementById('app')
-);
+var Home = React.createClass({
+  // ...
+  showLock: function() {
+    // We receive lock from the parent component in this case
+    // If you instantiate it in this component, just do this.lock.show()
+    this.props.lock.show();
+  },
+
+  render: function() {
+    return (
+    <div className="login-box">
+      <a onClick={this.showLock}>Sign In</a>
+    </div>);
+  }
+});
+
+var TodoList = React.createClass({
+  render: function() {
+    var _this = this;
+    var createItem = function(item, index) {
+      return (
+        <li key={ index }>
+          { item.text }
+          <span onClick={ _this.props.removeItem.bind(null, item['.key']) }
+                style={{ color: 'red', marginLeft: '10px', cursor: 'pointer' }}>
+            X
+          </span>
+        </li>
+      );
+    };
+    return <ul>{ this.props.todos.map(createItem) }</ul>;
+  }
+});
+
+var TodoBox = React.createClass({
+  mixins: [ReactFireMixin],
+
+  getInitialState: function() {
+    return {
+      todos: [],
+      text: ''
+    };
+  },
+
+  componentWillMount: function() {
+    this.lock = new Auth0Lock('JuyBXARCpO8QsruysCA1uqFFZfOsUUGf', 'makkina.eu.auth0.com');
+
+    var firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos');
+    this.bindAsArray(firebaseRef.limitToLast(25), 'todos');
+
+    //Auth0
+    this.setState({idToken: this.getIdToken()})
+
+  },
+  getIdToken: function() {
+    var idToken = localStorage.getItem('userToken');
+    var authHash = this.lock.parseHash(window.location.hash);
+    if (!idToken && authHash) {
+      if (authHash.id_token) {
+        idToken = authHash.id_token
+        localStorage.setItem('userToken', authHash.id_token);
+      }
+      if (authHash.error) {
+        console.log("Error signing in", authHash);
+        return null;
+      }
+    }
+    return idToken;
+  },
+
+  onChange: function(e) {
+    this.setState({text: e.target.value});
+  },
+
+  removeItem: function(key) {
+    var firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos');
+    firebaseRef.child(key).remove();
+  },
+
+  handleSubmit: function(e) {
+    e.preventDefault();
+    if (this.state.text && this.state.text.trim().length !== 0) {
+      this.firebaseRefs['todos'].push({
+        text: this.state.text
+      });
+      this.setState({
+        text: ''
+      });
+    }
+  },
+
+  render: function() {
+
+    if (this.state.idToken) {
+          return (
+            <div>
+            <LoggedIn lock={this.lock} idToken={this.state.idToken} />
+
+
+              <TodoList todos={ this.state.todos } removeItem={ this.removeItem } />
+              <form onSubmit={ this.handleSubmit }>
+                <input onChange={ this.onChange } value={ this.state.text } />
+                <button>{ 'Add #' + (this.state.todos.length + 1) }</button>
+              </form>
+
+            </div>
+          );
+        } else {
+          return (<Home lock={this.lock} />);
+    }
+
+  }
+});
+
+
+ReactDOM.render(<TodoBox />, document.getElementById('app'));
