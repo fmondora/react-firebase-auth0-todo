@@ -14,13 +14,17 @@ var LoggedIn = React.createClass({
         return;
       }
       this.setState({profile: profile});
+      this.props.profileHandler( profile );
     }.bind(this));
   },
 
   render: function() {
     if (this.state.profile) {
       return (
-        <h2>Welcome {this.state.profile.nickname}</h2>
+        <div className='userprofile'>
+            <img src={this.state.profile.picture} className='avatar'/>
+            Welcome {this.state.profile.given_name} {this.state.profile.family_name}
+        </div>
       );
     } else {
       return (
@@ -77,8 +81,9 @@ var TodoBox = React.createClass({
   componentWillMount: function() {
     this.lock = new Auth0Lock('JuyBXARCpO8QsruysCA1uqFFZfOsUUGf', 'makkina.eu.auth0.com');
 
-    var firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos');
-    this.bindAsArray(firebaseRef.limitToLast(25), 'todos');
+
+
+
 
     //Auth0
     this.setState({idToken: this.getIdToken()})
@@ -103,10 +108,25 @@ var TodoBox = React.createClass({
   onChange: function(e) {
     this.setState({text: e.target.value});
   },
+  firebase: function( profile ){
+    if (profile!=null)
+       this.firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos/'+profile.user_id);
+    else return this.firebaseRef;
+  },
 
   removeItem: function(key) {
-    var firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos');
-    firebaseRef.child(key).remove();
+    //var firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos/'+this.profile.user_id);
+    this.firebase().child(key).remove();
+  },
+  profileHandler: function( profile ){
+    console.log("setting profile: "+profile.user_id);
+    this.profile=profile;
+    //set the current profile to database
+    this.firebase(profile);
+
+    //var firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos/'+profile.user_id);
+    this.bindAsArray(this.firebase(), 'todos');
+
   },
 
   handleSubmit: function(e) {
@@ -126,7 +146,7 @@ var TodoBox = React.createClass({
     if (this.state.idToken) {
           return (
             <div>
-            <LoggedIn lock={this.lock} idToken={this.state.idToken} />
+            <LoggedIn lock={this.lock} idToken={this.state.idToken} profileHandler={this.profileHandler}/>
 
 
               <TodoList todos={ this.state.todos } removeItem={ this.removeItem } />
