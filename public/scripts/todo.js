@@ -141,12 +141,18 @@ var TodoBox = React.createClass({
     }
   },
 
+  logout: function (e){
+      localStorage.removeItem("userToken");
+      window.location.hash = "";
+      this.setState({idToken: ''});
+  },
+
   render: function() {
 
     if (this.state.idToken) {
           return (
             <div>
-            <LoggedIn lock={this.lock} idToken={this.state.idToken} profileHandler={this.profileHandler}/>
+              <LoggedIn lock={this.lock} idToken={this.state.idToken} profileHandler={this.profileHandler}/>
 
 
               <TodoList todos={ this.state.todos } removeItem={ this.removeItem } />
@@ -155,6 +161,8 @@ var TodoBox = React.createClass({
                 <button>{ 'Add #' + (this.state.todos.length + 1) }</button>
               </form>
 
+              <br/>
+              <a onClick={ this.logout }>Sign Out</a>
             </div>
           );
         } else {
