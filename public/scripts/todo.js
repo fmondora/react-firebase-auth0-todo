@@ -8,14 +8,37 @@ var LoggedIn = React.createClass({
   componentDidMount: function() {
     // In this case, the lock and token are retrieved from the parent component
     // If these are available locally, use `this.lock` and `this.idToken`
+    var auth0 = this.props.lock;
+    var this_ = this;
     this.props.lock.getProfile(this.props.idToken, function (err, profile) {
       if (err) {
         console.log("Error loading the Profile", err);
         return;
       }
-      this.setState({profile: profile});
-      this.props.profileHandler( profile );
+
+
+      var options = {
+        id_token: this.props.idToken, // The id_token you have now
+        api: 'firebase', // This defaults to the first active addon if any or you can specify this
+        "scope": "openid profile"         // default: openid
+      };
+
+
+      /**
+       * Authenticate and delegate the firebase profile
+       */
+      auth0.getClient().getDelegationToken(
+          options,
+          function (err, delegationResult) {
+              // this is firebase JWT
+              profile.firebase_token = delegationResult.id_token;
+              console.log('firepad_profile', profile);
+              this_.setState({profile: profile});
+              console.log("Profile firebase:"+profile.firebase_token);
+              this_.props.profileHandler( profile );
+          });
     }.bind(this));
+
   },
 
   render: function() {
@@ -80,11 +103,6 @@ var TodoBox = React.createClass({
 
   componentWillMount: function() {
     this.lock = new Auth0Lock('JuyBXARCpO8QsruysCA1uqFFZfOsUUGf', 'makkina.eu.auth0.com');
-
-
-
-
-
     //Auth0
     this.setState({idToken: this.getIdToken()})
 
