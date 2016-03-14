@@ -1,0 +1,12 @@
+{
+  "rules": {
+     "todos": {
+      "$uid": {
+        ".read": "auth != null && auth.fb_id == $uid",
+        ".write": "auth != null && auth.fb_id == $uid"
+      }
+       
+     }
+    
+  }
+}

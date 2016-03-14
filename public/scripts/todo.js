@@ -127,8 +127,20 @@ var TodoBox = React.createClass({
     this.setState({text: e.target.value});
   },
   firebase: function( profile ){
-    if (profile!=null)
+    if (profile!=null) {
        this.firebaseRef = new Firebase('https://todo-react-auth0.firebaseio.com/todos/'+profile.user_id);
+
+       this.firebaseRef.authWithCustomToken( profile.firebase_token, function(error, authData) {
+         if (error) {
+           console.log("Authentication Failed!", error);
+         } else {
+           console.log("Authenticated successfully with payload:", authData);
+         }
+
+       });
+
+       console.log("logged in to firebase");
+    }
     else return this.firebaseRef;
   },
 
